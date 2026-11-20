@@ -3,7 +3,7 @@
 run:
 	go mod tidy
 	go vet ./...
-	go run ./cmd/server
+	go run ./cmd/relayd
 
 test:
 	go test ./...
@@ -12,7 +12,7 @@ race:
 	go test -race ./...
 
 proto:
-    protoc \
+	protoc \
         --proto_path=. \
         --go_out=. \
         --go-grpc_out=. \
