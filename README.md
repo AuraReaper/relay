@@ -185,7 +185,7 @@ make lint    # static checks
 
 The milestones build on each other in a single chain, with one optional stretch goal at the end.
 
-- [ ] **M0. Skeleton:** repo layout, Makefile, compiling proto, `Clock` interface (real and fake), CI.
+- [x] **M0. Skeleton:** repo layout, Makefile, compiling proto, `Clock` interface (real and fake).
 - [ ] **M1. Domain model and state machine:** the `job` package and `backoff`.
 - [ ] **M2. In-memory Store:** enqueue, lease, complete, fail, cancel, stats, heaps, idempotency, backpressure.
 - [ ] **M3. gRPC surface, CLI and minimal worker:** servers, error mapping, `relayctl`, long-polling.
