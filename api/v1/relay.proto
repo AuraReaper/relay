@@ -2,4 +2,123 @@ syntax = "proto3";
 
 package relay.v1;
 
-option go_package = "github.com/AuraReaper/relay/api/relay_v1";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/AuraReaper/relay/api/v1;relay_v1";
+
+enum JobState {
+  JOB_STATE_UNSPECIFIED = 0;
+  PENDING = 1;
+  LEASED = 2;
+  SUCCEEDED = 3;
+  DEAD = 4;
+  CANCELLED = 5;
+}
+
+message Job {
+  string id = 1;
+  string queue = 2;
+  string type = 3;
+  bytes payload = 4;
+  int32 priority = 5;
+  JobState state = 6;
+  uint32 attempt = 7;
+  uint32 max_attempts = 8;
+  google.protobuf.Timestamp enqueued_at = 9;
+  google.protobuf.Timestamp available_at = 10;
+  google.protobuf.Timestamp lease_expiry = 11;
+  string last_error = 12;
+}
+
+message EnqueueRequest {
+  string queue = 1;
+  string type = 2;
+  bytes payload = 3;
+  int32 priority = 4;
+  uint32 delay_ms = 5;
+  uint32 max_attempts = 6; // 0 = server default (5)
+  string idempotency_key = 7;
+}
+
+message EnqueueResponse {
+  Job job = 1;
+  bool deduplicated = 2;
+}
+
+message GetJobRequest {
+  string id = 1;
+}
+
+message CancelJobRequest {
+  string id = 1;
+}
+
+message StatsRequest {
+  string queue = 1;
+}
+
+message QueueStatus {
+  string queue = 1;
+  uint64 pending = 2;
+  uint64 delayed = 3;
+  uint64 leased = 4;
+  uint64 succeeded = 5;
+  uint64 dead = 6;
+}
+
+message StatsResponse {
+  repeated QueueStatus queues = 1;
+}
+
+service Producer {
+  rpc Enqueue(EnqueueRequest) returns (EnqueueResponse);
+  rpc GetJob(GetJobRequest) returns (Job);
+  rpc CancelJob(CancelJobRequest) returns (Job);
+  rpc Status(StatsRequest) returns (StatsResponse);
+}
+
+message LeaseRequest {
+  string worker_id = 1;
+  repeated string queues = 2;
+  uint32 wait_ms = 3; // long-poll, max 30000
+  uint32 lease_ms = 4; // 0 = server default (30000)
+}
+
+message LeaseResponse {
+  Job job = 1; // unset on long-poll timeout (not an error)
+}
+
+message HeartbeatRequest {
+  string job_id = 1;
+  uint32 attempt = 2;
+  uint32 extend_ms = 3;
+}
+
+message HeartbeatResponse {
+  google.protobuf.Timestamp lease_expiry = 1;
+}
+
+message CompleteRequest {
+  string job_id = 1;
+  uint32 attempt = 2;
+}
+
+message CompleteResponse {}
+
+message FailRequest {
+  string job_id = 1;
+  uint32 attempt = 2;
+  string error = 3;
+  bool retryable = 4;
+}
+
+message FailResponse {
+  JobState resulting_state = 1;
+}
+
+service Worker {
+  rpc Lease(LeaseRequest) returns (LeaseResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  rpc Complete(CompleteRequest) returns (CompleteResponse);
+  rpc Fail(FailRequest) returns (FailResponse);
+}
